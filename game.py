@@ -1,6 +1,17 @@
 import cv2
 import pytesseract
 from matplotlib import pyplot as plt
+import mediapipe as mp
+from mediapipe import solutions
+from mediapipe.framework.formats import landmark_pb2
+
+# Library Constants
+BaseOptions = mp.tasks.BaseOptions
+HandLandmarker = mp.tasks.vision.HandLandmarker
+HandLandmarkPoints = mp.solutions.hands.HandLandmark
+HandLandmarkerOptions = mp.tasks.vision.HandLandmarkerOptions
+VisionRunningMode = mp.tasks.vision.RunningMode
+DrawingUtil = mp.solutions.drawing_utils
 
 
 """
@@ -10,7 +21,7 @@ Edited by Nic Ekstrand
 
 """
 
-def letter_detection(image):
+"""def letter_detection(image):
     # Change BRG image to Grayscale and RGB
     img_gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
     img_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
@@ -59,21 +70,71 @@ def letter_detection(image):
         file.write("\n")
         
         # Close the file
-        file.close
-                    
+        file.close"""
+
+def finger_tracker(image, detection_result):
+    """
+    Draws all the landmarks on the hand
+    Args:
+        image (Image): Image to draw on
+        detection_result (HandLandmarkerResult): HandLandmarker detection results
+    """
+    # Get a list of the landmarks
+    hand_landmarks_list = detection_result.hand_landmarks
+    
+    # Loop through the detected hands to visualize.
+    for idx in range(len(hand_landmarks_list)):
+        hand_landmarks = hand_landmarks_list[idx]
+
+        # Save the landmarks into a NormalizedLandmarkList
+        hand_landmarks_proto = landmark_pb2.NormalizedLandmarkList()
+        hand_landmarks_proto.landmark.extend([
+        landmark_pb2.NormalizedLandmark(x=landmark.x, y=landmark.y, z=landmark.z) for landmark in hand_landmarks
+        ])
+
+        # Draw the landmarks on the hand
+        DrawingUtil.draw_landmarks(image,
+                                    hand_landmarks_proto,
+                                    solutions.hands.HAND_CONNECTIONS,
+                                    solutions.drawing_styles.get_default_hand_landmarks_style(),
+                                    solutions.drawing_styles.get_default_hand_connections_style())
+        
+
+            
 
 
 # Open facetime camera for video input
 video = cv2.VideoCapture(0)
 
+# Create the hand detector
+base_options = BaseOptions(model_asset_path='data/hand_landmarker.task')
+options = HandLandmarkerOptions(base_options=base_options,
+                                        num_hands=2)
+detector = HandLandmarker.create_from_options(options)
+
 # Loop until the end of the video
 while(video.isOpened()):
 
     frame = video.read()[1]
-    image = letter_detection(frame)
+
+    # Convert it to an RGB image
+    image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+
+    
+
+    # Convert the image to a readable format and find the hands
+    to_detect = mp.Image(image_format=mp.ImageFormat.SRGB, data=frame)
+    results = detector.detect(to_detect)
+
+    # Draw the hand landmarks
+    #finger_tracker(image, results)
+    draw_line(image, results)
+
+    # The image comes in mirrored - flip it
+    image = cv2.flip(image, 1)
 
     # Display the resulting frame
-    cv2.imshow("Smiles", frame)
+    cv2.imshow("Smiles", image)
 
     # Define q as the exit button
     if cv2.waitKey(50) & 0xFF == ord("q"):
