@@ -79,6 +79,10 @@ def finger_tracker(image, detection_result):
         image (Image): Image to draw on
         detection_result (HandLandmarkerResult): HandLandmarker detection results
     """
+    # Get image details
+    imageHeight, imageWidth = image.shape[:2]
+
+
     # Get a list of the landmarks
     hand_landmarks_list = detection_result.hand_landmarks
     
@@ -99,8 +103,15 @@ def finger_tracker(image, detection_result):
                                     solutions.drawing_styles.get_default_hand_landmarks_style(),
                                     solutions.drawing_styles.get_default_hand_connections_style())
         
+        # Get the coordinate of just the index finger
+        finger = hand_landmarks[HandLandmarkPoints.INDEX_FINGER_TIP.value]
 
-            
+        # Map the coordinates back to screen dimensions
+        pixelCoord = DrawingUtil._normalized_to_pixel_coordinates(finger.x, finger.y, imageWidth, imageHeight)
+
+        if pixelCoord:
+            # Draw the circle around the index finger
+            cv2.circle(image, (pixelCoord[0], pixelCoord[1]), 25, (255, 0, 0), 5)
 
 
 # Open facetime camera for video input
@@ -114,27 +125,27 @@ detector = HandLandmarker.create_from_options(options)
 
 # Loop until the end of the video
 while(video.isOpened()):
-
     frame = video.read()[1]
 
     # Convert it to an RGB image
     image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
 
-    
-
-    # Convert the image to a readable format and find the hands
-    to_detect = mp.Image(image_format=mp.ImageFormat.SRGB, data=frame)
-    results = detector.detect(to_detect)
-
-    # Draw the hand landmarks
-    #finger_tracker(image, results)
-    draw_line(image, results)
-
     # The image comes in mirrored - flip it
     image = cv2.flip(image, 1)
 
+    # Convert the image to a readable format and find the hands
+    to_detect = mp.Image(image_format=mp.ImageFormat.SRGB, data=image)
+    results = detector.detect(to_detect)
+
+    # Draw the hand landmarks
+    finger_tracker(image, results)
+    #draw_line(image, results)
+
+    
+    image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+
     # Display the resulting frame
-    cv2.imshow("Smiles", image)
+    # cv2.imshow("Finger Reader", image)
 
     # Define q as the exit button
     if cv2.waitKey(50) & 0xFF == ord("q"):
