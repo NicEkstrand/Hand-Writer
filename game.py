@@ -4,6 +4,7 @@ from matplotlib import pyplot as plt
 import mediapipe as mp
 from mediapipe import solutions
 from mediapipe.framework.formats import landmark_pb2
+import pygame
 
 # Library Constants
 BaseOptions = mp.tasks.BaseOptions
@@ -112,6 +113,11 @@ def finger_tracker(image, detection_result):
         if pixelCoord:
             # Draw the circle around the index finger
             cv2.circle(image, (pixelCoord[0], pixelCoord[1]), 25, (255, 0, 0), 5)
+            pygame.draw.circle(screen, (255, 0, 0), (pixelCoord[0], pixelCoord[1]), 2, width=20)
+
+"""
+Start of main function
+"""
 
 
 # Open facetime camera for video input
@@ -122,6 +128,11 @@ base_options = BaseOptions(model_asset_path='data/hand_landmarker.task')
 options = HandLandmarkerOptions(base_options=base_options,
                                         num_hands=2)
 detector = HandLandmarker.create_from_options(options)
+
+# Initialize pygame
+pygame.init()
+screen = pygame.display.set_mode((1000, 1000))
+pygame.display.set_caption("Finger Art")
 
 # Loop until the end of the video
 while(video.isOpened()):
@@ -139,13 +150,12 @@ while(video.isOpened()):
 
     # Draw the hand landmarks
     finger_tracker(image, results)
-    #draw_line(image, results)
-
     
     image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
 
     # Display the resulting frame
-    # cv2.imshow("Finger Reader", image)
+    cv2.imshow("Finger Reader", image)
+    pygame.display.flip()
 
     # Define q as the exit button
     if cv2.waitKey(50) & 0xFF == ord("q"):
