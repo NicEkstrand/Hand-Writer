@@ -80,11 +80,20 @@ redness = int(input("How much red do you want in your color?"))
 greenness = int(input("How much green do you want in your color?"))
 blueness = int(input("How much blue do you want in your color?"))
 
+tracking = True
+
 # Loop until the end of the video
 while(video.isOpened() and running):
     for event in pygame.event.get():
         if event.type == pygame.QUIT:  
            running = False
+        # If space key is pressed, the hand will stop being tracked
+        elif event.type == pygame.KEYDOWN:
+            if event.key == pygame.K_g:
+                if tracking:
+                    tracking = False
+                else:
+                    tracking = True
         
     frame = video.read()[1]
 
@@ -94,19 +103,28 @@ while(video.isOpened() and running):
     # The image comes in mirrored - flip it
     image = cv2.flip(image, 1)
 
-    # Convert the image to a readable format and find the hands
-    to_detect = mp.Image(image_format=mp.ImageFormat.SRGB, data=image)
-    results = detector.detect(to_detect)
 
-    # Draw the hand landmarks
-    finger_tracker(image, results)
+
+    if tracking:
+        # Convert the image to a readable format and find the hands
+        to_detect = mp.Image(image_format=mp.ImageFormat.SRGB, data=image)
+        results = detector.detect(to_detect)
+
+        # Draw the hand landmarks
+        finger_tracker(image, results)
     
-    image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+        image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
 
     # Display the resulting frame
     cv2.imshow("Finger Reader", image)
     pygame.display.flip()
 
     # Define q as the exit button
-    if cv2.waitKey(50) & 0xFF == ord("q"):
+    key = cv2.waitKey(50) & 0xFF
+    if key == ord("q"):
         break
+    elif key == ord("g"):
+        if tracking:
+            tracking = False
+        else:
+            tracking = True
